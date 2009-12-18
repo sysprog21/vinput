@@ -1,0 +1,17 @@
+#
+# VKBD
+# virtual kernel keyboard
+# blunderer <blunderer@blunderer.org>
+#
+
+vkbd is a virtual keyboard that allow userland applications to send keyboard event to system in a very easy way.
+When insmoding the vkbd.ko module, the /proc/kbd entry is created. You can just write your key event or read the last key event sent to vkbd.
+vkbd uses a simple format: "%+04d"
+A positive value means KEY_PRESS and a negative one means KEY_RELEASE.
+
+ex: simulate a key press on "g" (KEY_G = 34 )
+	$> echo +0034 > /proc/kbd
+
+ex: simulate a key release on "g" (KEY_G = 34 )
+	$> echo -0034 > /proc/kbd
+
