@@ -15,3 +15,5 @@ ex: simulate a key press on "g" (KEY_G = 34 )
 ex: simulate a key release on "g" (KEY_G = 34 )
 	$> echo -0034 > /proc/kbd
 
+The keycodes list can be retrieved from /usr/include/linux/input.h
+
