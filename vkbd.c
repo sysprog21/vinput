@@ -2,173 +2,105 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
-#include <linux/proc_fs.h>
 #include <linux/input.h>
 #include <linux/spinlock.h>
-#include <asm/uaccess.h>
 
-#define VKBD_PROC_NAME	"kbd"
-#define VKBD_INPUT_LEN	5
+#include "vinput.h"
 
-#define VKBD_RELEASE	0
-#define VKBD_PRESS	1
+#define VINPUT_KBD		"vkbd"
+#define VINPUT_RELEASE		0
+#define VINPUT_PRESS		1
 
-struct vkbd_dev {
-	long last_entry;
-	spinlock_t lock;
-	struct input_dev *device;
-};
+static unsigned short vkeymap[KEY_MAX];
 
-static struct vkbd_dev * vkbd = NULL;
-
-static int vkbd_open(struct inode * inode, struct file * file) {
-	struct proc_dir_entry * proc_data = PDE(inode);
-	file->private_data = proc_data->data;
-	return 0;
-}
-
-static ssize_t vkbd_read(struct file * file, char __user * buffer, size_t count, loff_t * offset)
+static int vinput_vkbd_init(struct vinput *vinput)
 {
-	struct vkbd_dev * dev = file->private_data;
-
-	char buff[VKBD_INPUT_LEN+1];
-
-	spin_lock(&dev->lock);
-	snprintf(buff, VKBD_INPUT_LEN+1, "%+04ld", dev->last_entry);
-	spin_unlock(&dev->lock);
-
-	if(*offset > VKBD_INPUT_LEN) {
-		count = 0;
-	} else if(count+*offset > VKBD_INPUT_LEN) {
-		count = VKBD_INPUT_LEN - *offset;
-	}
-
-	if(copy_to_user(buffer, buff+*offset, count)) {
-		count = -EFAULT;
-	}
-
-	*offset += count;
-
-	return count;
-}
-
-static ssize_t vkbd_write(struct file * file, const char __user * buffer, size_t count, loff_t * offset)
-{
-	short key = 0;
-	short type = VKBD_PRESS;
-	char buff[VKBD_INPUT_LEN+1];
-	struct vkbd_dev * dev = file->private_data;
-
-	memset(buff, 0, sizeof(char)*(VKBD_INPUT_LEN+1));
-
-	if(count < VKBD_INPUT_LEN) {
-		return count;
-	}
-
-	if(copy_from_user(buff, buffer, VKBD_INPUT_LEN)) {
-		return -EFAULT;
-	}
-
-	spin_lock(&dev->lock);
-	dev->last_entry = simple_strtol(buff, NULL, 10);
-	if(dev->last_entry == 0) {
-		dev->last_entry = simple_strtol(buff+1, NULL, 10);
-	}
-	key = dev->last_entry;
-	spin_unlock(&dev->lock);
-
-	if(key < 0) {
-		type = VKBD_RELEASE;
-		key = -key;
-	}
-
-	printk(KERN_DEBUG "event %s code %d\n", type==VKBD_RELEASE?"VKBD_RELEASE":"VKBD_PRESS", key);
-
-	input_report_key(dev->device, key, type);
-	input_sync(dev->device);
-
-	return VKBD_INPUT_LEN;
-}
-
-struct file_operations proc_ops = {
-	.owner = THIS_MODULE,
-	.open = vkbd_open,
-	.read = vkbd_read,
-	.write = vkbd_write,
-};
-
-static int __init vkbd_init(void)	
-{
+	int i;
 	int err = 0;
-	int i = 0;
 
-	printk(KERN_INFO "loading virtual keyboard driver\n");
+	vinput->input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
+	vinput->input->keycodesize = sizeof(unsigned short);
+	vinput->input->keycodemax = KEY_MAX;
+	vinput->input->keycode = vkeymap;
 
-	vkbd = kmalloc(sizeof(struct vkbd_dev), GFP_KERNEL);
-	if(vkbd == NULL) {
-		printk(KERN_ERR "cannot allocate vkbd device structure\n");
-		err = -ENOMEM;
-		goto err_alloc_device;
+	for (i = 0; i < KEY_MAX; i++) {
+		set_bit(vkeymap[i], vinput->input->keybit);
 	}
 
-	if(proc_create_data(VKBD_PROC_NAME, 0666, NULL, &proc_ops, vkbd) == NULL) {
-		printk(KERN_ERR "cannot initialize /proc/kbd\n");
-		err = -ENOMEM;
-		goto err_alloc_proc;
-	}
-
-	vkbd->device = input_allocate_device();
-	if(vkbd->device == NULL) {
-		printk(KERN_ERR "cannot allocate vkbd device\n");
-		err = -ENOMEM;
-		goto err_alloc_dev;
-	}
-
-	vkbd->device->name = "vkbd";
-	vkbd->device->id.bustype = BUS_VIRTUAL;
-	vkbd->device->id.product = 0x0000;
-	vkbd->device->id.vendor = 0x0000;
-	vkbd->device->id.version = 0x0000;
-
-	vkbd->device->evbit[0] = BIT_MASK(EV_KEY);
-	       
-	for(i = 0; i < BIT_WORD(KEY_MAX); i++) {
-		vkbd->device->keybit[i] = 0xffff;
-	}
-
-	if(input_register_device(vkbd->device)) {
-		printk(KERN_ERR "cannot register vkbd input device\n");
+	if (input_register_device(vinput->input)) {
+		printk(KERN_ERR "cannot register vinput input device\n");
 		err = -ENODEV;
-		goto err_init_dev;
 	}
-
-	return 0;
-
-err_init_dev:
-	input_free_device(vkbd->device);
-err_alloc_dev:
-	remove_proc_entry(VKBD_PROC_NAME, NULL);
-err_alloc_proc:
-	kfree(vkbd);
-err_alloc_device:
 
 	return err;
 }
 
-static void __exit vkbd_end(void)	
+static int vinput_vkbd_read(struct vinput *vinput, char *buff, int len)
 {
-	printk(KERN_INFO "unloading virtual keyboard driver\n");
-	
-	input_unregister_device(vkbd->device);
-	input_free_device(vkbd->device);
-	remove_proc_entry(VKBD_PROC_NAME, NULL);
-	kfree(vkbd);
+	spin_lock(&vinput->lock);
+	len = snprintf(buff, len, "%+ld\n", vinput->last_entry);
+	spin_unlock(&vinput->lock);
+
+	return len;
+}
+
+static int vinput_vkbd_send(struct vinput *vinput, char *buff, int len)
+{
+	short key = 0;
+	short type = VINPUT_PRESS;
+
+	if (buff[0] == '+')
+		key = simple_strtol(buff + 1, NULL, 10);
+	else
+		key = simple_strtol(buff, NULL, 10);
+
+	spin_lock(&vinput->lock);
+	vinput->last_entry = key;
+	spin_unlock(&vinput->lock);
+
+	if (key < 0) {
+		type = VINPUT_RELEASE;
+		key = -key;
+	}
+
+	dev_info(vinput->dev, "Event %s code %d\n",
+		 (type == VINPUT_RELEASE) ? "VINPUT_RELEASE" : "VINPUT_PRESS",
+		 key);
+
+	input_report_key(vinput->input, key, type);
+	input_sync(vinput->input);
+
+	return len;
+}
+
+static struct vinput_ops vkbd_ops = {
+	.init = vinput_vkbd_init,
+	.send = vinput_vkbd_send,
+	.read = vinput_vkbd_read,
+};
+
+static struct vinput_device vkbd_dev = {
+	.name = VINPUT_KBD,
+	.ops = &vkbd_ops,
+};
+
+static int __init vkbd_init(void)
+{
+	int i;
+
+	for (i = 0; i < KEY_MAX; i++)
+		vkeymap[i] = i;
+	return vinput_register(&vkbd_dev);
+}
+
+static void __exit vkbd_end(void)
+{
+	vinput_unregister(&vkbd_dev);
 }
 
 module_init(vkbd_init);
 module_exit(vkbd_end);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("blunderer <blunderer@blunderer.org>");
-MODULE_DESCRIPTION("emulate kbd event thru /proc/kbd");
-
+MODULE_AUTHOR("Tristan Lelong <tristan.lelong@blunderer.org>");
+MODULE_DESCRIPTION("emulate input events thru /dev/vkbd");
