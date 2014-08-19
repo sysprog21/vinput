@@ -16,7 +16,7 @@ The drivers needs to export a vinput_devince function that contains the virtual 
 Then using vinput_register_device and vinput_unregister_device will add a new device to the list of support virtual input devices.
 
 int init(struct vinput *);
-  This function is passed a struct vinput already initialized with an allocated struct input_dev. The init function is responsible for initializing the 
+  This function is passed a struct vinput already initialized with an allocated struct input_dev. The init function is responsible for initializing the
   capabilities of the input device and register it.
 
 int send(struct vinput *, char *, int);
