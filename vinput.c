@@ -27,7 +27,7 @@ struct vinput_device *vinput_get_device_by_type(const char *type)
 	list_for_each(curr, &vinput_devices) {
 		device = list_entry(curr, struct vinput_device, list);
 		if (strncmp(type, device->name, strlen(device->name)) == 0) {
-			found = 1;;
+			found = 1;
 			break;
 		}
 	}
@@ -94,8 +94,8 @@ static int vinput_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t vinput_read(struct file *file, char __user * buffer,
-			   size_t count, loff_t * offset)
+static ssize_t vinput_read(struct file *file, char __user *buffer,
+			   size_t count, loff_t *offset)
 {
 	int len;
 	char buff[VINPUT_MAX_LEN + 1];
@@ -103,23 +103,21 @@ static ssize_t vinput_read(struct file *file, char __user * buffer,
 
 	len = vinput->type->ops->read(vinput, buff, count);
 
-	if (*offset > len) {
+	if (*offset > len)
 		count = 0;
-	} else if (count + *offset > VINPUT_MAX_LEN) {
+	else if (count + *offset > VINPUT_MAX_LEN)
 		count = len - *offset;
-	}
 
-	if (copy_to_user(buffer, buff + *offset, count)) {
+	if (copy_to_user(buffer, buff + *offset, count))
 		count = -EFAULT;
-	}
 
 	*offset += count;
 
 	return count;
 }
 
-static ssize_t vinput_write(struct file *file, const char __user * buffer,
-			    size_t count, loff_t * offset)
+static ssize_t vinput_write(struct file *file, const char __user *buffer,
+			    size_t count, loff_t *offset)
 {
 	char buff[VINPUT_MAX_LEN + 1];
 	struct vinput *vinput = file->private_data;
@@ -131,14 +129,13 @@ static ssize_t vinput_write(struct file *file, const char __user * buffer,
 		return -EINVAL;
 	}
 
-	if (copy_from_user(buff, buffer, VINPUT_MAX_LEN)) {
+	if (copy_from_user(buff, buffer, VINPUT_MAX_LEN))
 		return -EFAULT;
-	}
 
 	return vinput->type->ops->send(vinput, buff, count);
 }
 
-static struct file_operations vinput_fops = {
+static const struct file_operations vinput_fops = {
 	.owner = THIS_MODULE,
 	.open = vinput_open,
 	.release = vinput_release,
@@ -281,9 +278,8 @@ static ssize_t export_store(struct class *class, struct class_attribute *attr,
 	vinput->type = device;
 	err = vinput_register_vdevice(vinput);
 
-	if (err < 0) {
+	if (err < 0)
 		goto fail_register;
-	}
 
 	return len;
 fail_register:
@@ -296,10 +292,13 @@ static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 			      const char *buf, size_t len)
 {
 	int err = -ENODEV;
+	int ret;
 	unsigned long id;
 	struct vinput *vinput;
 
-	id = simple_strtol(buf, NULL, 10);
+	ret = kstrtol(buf, 10, &id);
+	if (ret)
+		pr_err("Error during kstrtol: -%d\n", ret);
 	vinput = vinput_get_vdevice_by_id(id);
 
 	if (vinput == NULL) {
@@ -337,7 +336,6 @@ int vinput_register(struct vinput_device *dev)
 		dev->name);
 	return 0;
 }
-
 EXPORT_SYMBOL(vinput_register);
 
 void vinput_unregister(struct vinput_device *dev)
@@ -353,7 +351,6 @@ void vinput_unregister(struct vinput_device *dev)
 	list_del(&dev->list);
 	spin_unlock(&vinput_lock);
 }
-
 EXPORT_SYMBOL(vinput_unregister);
 
 static int __init vinput_init(void)

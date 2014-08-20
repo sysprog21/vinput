@@ -23,12 +23,11 @@ static int vinput_vkbd_init(struct vinput *vinput)
 	vinput->input->keycodemax = KEY_MAX;
 	vinput->input->keycode = vkeymap;
 
-	for (i = 0; i < KEY_MAX; i++) {
+	for (i = 0; i < KEY_MAX; i++)
 		set_bit(vkeymap[i], vinput->input->keybit);
-	}
 
 	if (input_register_device(vinput->input)) {
-		printk(KERN_ERR "cannot register vinput input device\n");
+		dev_err(vinput->dev, "cannot register vinput input device\n");
 		err = -ENODEV;
 	}
 
@@ -46,14 +45,16 @@ static int vinput_vkbd_read(struct vinput *vinput, char *buff, int len)
 
 static int vinput_vkbd_send(struct vinput *vinput, char *buff, int len)
 {
-	short key = 0;
+	int ret;
+	long key = 0;
 	short type = VINPUT_PRESS;
 
 	if (buff[0] == '+')
-		key = simple_strtol(buff + 1, NULL, 10);
+		ret = kstrtol(buff + 1, 10, &key);
 	else
-		key = simple_strtol(buff, NULL, 10);
-
+		ret = kstrtol(buff, 10, &key);
+	if (ret)
+		dev_err(vinput->dev, "error during kstrtol: -%d\n", ret);
 	spin_lock(&vinput->lock);
 	vinput->last_entry = key;
 	spin_unlock(&vinput->lock);
@@ -63,7 +64,7 @@ static int vinput_vkbd_send(struct vinput *vinput, char *buff, int len)
 		key = -key;
 	}
 
-	dev_info(vinput->dev, "Event %s code %d\n",
+	dev_info(vinput->dev, "Event %s code %ld\n",
 		 (type == VINPUT_RELEASE) ? "VINPUT_RELEASE" : "VINPUT_PRESS",
 		 key);
 
