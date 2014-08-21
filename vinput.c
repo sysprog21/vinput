@@ -237,11 +237,12 @@ static void vinput_unregister_vdevice(struct vinput *vinput)
 static void __vinput_destroy_vdevice(struct vinput *vinput)
 {
 	dev_info(vinput->dev, "Removing virtual input %ld\n", vinput->id);
+	/* Remove from the list first */
+	spin_lock(&vinput_lock);
+	list_del(&vinput->list);
+	spin_unlock(&vinput_lock);
 	device_destroy(&vinput_class, vinput->devno);
 	cdev_del(&vinput->cdev);
-
-	list_del(&vinput->list);
-
 	module_put(THIS_MODULE);
 
 	kfree(vinput);
@@ -249,9 +250,7 @@ static void __vinput_destroy_vdevice(struct vinput *vinput)
 
 static void vinput_destroy_vdevice(struct vinput *vinput)
 {
-	spin_lock(&vinput_lock);
 	__vinput_destroy_vdevice(vinput);
-	spin_unlock(&vinput_lock);
 }
 
 static ssize_t export_store(struct class *class, struct class_attribute *attr,
@@ -340,15 +339,17 @@ EXPORT_SYMBOL(vinput_register);
 void vinput_unregister(struct vinput_device *dev)
 {
 	struct list_head *curr, *next;
-
+	pr_info("vinput: unregistered virtual input device '%s'\n",
+		dev->name);
+	/* Remove from the list first */
 	spin_lock(&vinput_lock);
+	list_del(&dev->list);
+	spin_unlock(&vinput_lock);
 	list_for_each_safe(curr, next, &vinput_vdevices) {
 		struct vinput *vinput = list_entry(curr, struct vinput, list);
 		vinput_unregister_vdevice(vinput);
 		__vinput_destroy_vdevice(vinput);
 	}
-	list_del(&dev->list);
-	spin_unlock(&vinput_lock);
 }
 EXPORT_SYMBOL(vinput_unregister);
 
