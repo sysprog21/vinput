@@ -129,7 +129,7 @@ static ssize_t vinput_write(struct file *file, const char __user *buffer,
 		return -EINVAL;
 	}
 
-	if (copy_from_user(buff, buffer, VINPUT_MAX_LEN))
+	if (copy_from_user(buff, buffer, count))
 		return -EFAULT;
 
 	return vinput->type->ops->send(vinput, buff, count);
