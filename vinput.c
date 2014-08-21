@@ -232,7 +232,6 @@ static int vinput_register_vdevice(struct vinput *vinput)
 static void vinput_unregister_vdevice(struct vinput *vinput)
 {
 	input_unregister_device(vinput->input);
-	input_free_device(vinput->input);
 }
 
 static void __vinput_destroy_vdevice(struct vinput *vinput)
