@@ -20,8 +20,7 @@ struct vinput {
 	long last_entry;
 	spinlock_t lock;
 
-	struct cdev cdev;
-	struct device *dev;
+	struct device dev;
 	struct list_head list;
 	struct input_dev *input;
 	struct vinput_device *type;

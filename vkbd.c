@@ -27,7 +27,7 @@ static int vinput_vkbd_init(struct vinput *vinput)
 		set_bit(vkeymap[i], vinput->input->keybit);
 
 	if (input_register_device(vinput->input)) {
-		dev_err(vinput->dev, "cannot register vinput input device\n");
+		dev_err(&vinput->dev, "cannot register vinput input device\n");
 		err = -ENODEV;
 	}
 
@@ -54,7 +54,7 @@ static int vinput_vkbd_send(struct vinput *vinput, char *buff, int len)
 	else
 		ret = kstrtol(buff, 10, &key);
 	if (ret)
-		dev_err(vinput->dev, "error during kstrtol: -%d\n", ret);
+		dev_err(&vinput->dev, "error during kstrtol: -%d\n", ret);
 	spin_lock(&vinput->lock);
 	vinput->last_entry = key;
 	spin_unlock(&vinput->lock);
@@ -64,7 +64,7 @@ static int vinput_vkbd_send(struct vinput *vinput, char *buff, int len)
 		key = -key;
 	}
 
-	dev_info(vinput->dev, "Event %s code %ld\n",
+	dev_info(&vinput->dev, "Event %s code %ld\n",
 		 (type == VINPUT_RELEASE) ? "VINPUT_RELEASE" : "VINPUT_PRESS",
 		 key);
 
