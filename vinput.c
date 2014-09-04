@@ -271,14 +271,16 @@ fail:
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 			      const char *buf, size_t len)
 {
-	int err = -ENODEV;
-	int ret;
+	int err;
 	unsigned long id;
 	struct vinput *vinput;
 
-	ret = kstrtol(buf, 10, &id);
-	if (ret)
-		pr_err("Error during kstrtol: -%d\n", ret);
+	err = kstrtol(buf, 10, &id);
+	if (err) {
+		err = -EINVAL;
+		goto failed;
+	}
+
 	vinput = vinput_get_vdevice_by_id(id);
 	if (IS_ERR(vinput)) {
 		pr_err("vinput: No such vinput device %ld\n", id);
