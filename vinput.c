@@ -1,4 +1,4 @@
-
+#define DEBUG
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -48,7 +48,7 @@ struct vinput_device *vinput_get_device_by_type(const char *type)
 
 struct vinput *vinput_get_vdevice_by_id(long id)
 {
-	struct vinput *vinput;
+	struct vinput *vinput = NULL;
 	struct list_head *curr;
 
 	spin_lock(&vinput_lock);
@@ -140,8 +140,6 @@ static void vinput_unregister_vdevice(struct vinput *vinput)
 
 static void vinput_destroy_vdevice(struct vinput *vinput)
 {
-	dev_info(&vinput->dev, "Removing virtual input %ld\n", vinput->id);
-
 	/* Remove from the list first */
 	spin_lock(&vinput_lock);
 	list_del(&vinput->list);
@@ -156,9 +154,11 @@ static void vinput_destroy_vdevice(struct vinput *vinput)
 static void vinput_release_dev(struct device *dev)
 {
 	struct vinput *vinput = dev_to_vinput(dev);
+	int id = vinput->id;
 
-	vinput_unregister_vdevice(vinput);
 	vinput_destroy_vdevice(vinput);
+
+	pr_debug("released vinput%d.\n", id);
 }
 
 static struct vinput *vinput_alloc_vdevice(void)
@@ -215,6 +215,7 @@ static int vinput_register_vdevice(struct vinput *vinput)
 
 	/* register the input device */
 	vinput->input->name = "vinput";
+	vinput->input->phys = "vinput";
 	vinput->input->dev.parent = &vinput->dev;
 
 	vinput->input->id.bustype = BUS_VIRTUAL;
@@ -224,8 +225,9 @@ static int vinput_register_vdevice(struct vinput *vinput)
 
 	err = vinput->type->ops->init(vinput);
 
-	dev_info(&vinput->dev, "Registered virtual input %s %ld\n",
-		 vinput->type->name, vinput->id);
+	if (err == 0)
+		dev_info(&vinput->dev, "Registered virtual input %s %ld\n",
+			 vinput->type->name, vinput->id);
 
 	return err;
 }
@@ -253,16 +255,23 @@ static ssize_t export_store(struct class *class, struct class_attribute *attr,
 	vinput->type = device;
 	err = vinput_register_vdevice(vinput);
 	if (err < 0)
-		goto fail_register_input;
+		goto fail_register_vinput;
 
 	err = device_register(&vinput->dev);
 	if (err < 0)
 		goto fail_register;
 
+	err = input_register_device(vinput->input);
+	if (err < 0)
+		goto fail_register_input;
+
 	return len;
+
+fail_register_input:
+	device_unregister(&vinput->dev);
 fail_register:
 	vinput_unregister_vdevice(vinput);
-fail_register_input:
+fail_register_vinput:
 	vinput_destroy_vdevice(vinput);
 fail:
 	return err;
@@ -289,6 +298,7 @@ static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 	}
 
 	device_unregister(&vinput->dev);
+	vinput_unregister_vdevice(vinput);
 
 	return len;
 failed:

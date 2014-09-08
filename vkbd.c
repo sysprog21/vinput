@@ -26,11 +26,6 @@ static int vinput_vkbd_init(struct vinput *vinput)
 	for (i = 0; i < KEY_MAX; i++)
 		set_bit(vkeymap[i], vinput->input->keybit);
 
-	if (input_register_device(vinput->input)) {
-		dev_err(&vinput->dev, "cannot register vinput input device\n");
-		err = -ENODEV;
-	}
-
 	return err;
 }
 
