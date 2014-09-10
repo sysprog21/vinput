@@ -16,7 +16,6 @@ static unsigned short vkeymap[KEY_MAX];
 static int vinput_vkbd_init(struct vinput *vinput)
 {
 	int i;
-	int err = 0;
 
 	vinput->input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP);
 	vinput->input->keycodesize = sizeof(unsigned short);
@@ -26,7 +25,7 @@ static int vinput_vkbd_init(struct vinput *vinput)
 	for (i = 0; i < KEY_MAX; i++)
 		set_bit(vkeymap[i], vinput->input->keybit);
 
-	return err;
+	return input_register_device(vinput->input);
 }
 
 static int vinput_vkbd_read(struct vinput *vinput, char *buff, int len)

@@ -12,7 +12,6 @@
 #include "vinput.h"
 
 #define DRIVER_NAME	"vinput"
-#define VINPUT_MINORS	32
 
 #define dev_to_vinput(dev)      container_of(dev, struct vinput, dev)
 
@@ -28,13 +27,13 @@ static struct class vinput_class;
 struct vinput_device *vinput_get_device_by_type(const char *type)
 {
 	int found = 0;
-	struct vinput_device *device;
+	struct vinput_device *vinput;
 	struct list_head *curr;
 
 	spin_lock(&vinput_lock);
 	list_for_each(curr, &vinput_devices) {
-		device = list_entry(curr, struct vinput_device, list);
-		if (strncmp(type, device->name, strlen(device->name)) == 0) {
+		vinput = list_entry(curr, struct vinput_device, list);
+		if (vinput && strncmp(type, vinput->name, strlen(vinput->name)) == 0) {
 			found = 1;
 			break;
 		}
@@ -42,7 +41,7 @@ struct vinput_device *vinput_get_device_by_type(const char *type)
 	spin_unlock(&vinput_lock);
 
 	if (found)
-		return device;
+		return vinput;
 	return ERR_PTR(-ENODEV);
 }
 
@@ -54,12 +53,12 @@ struct vinput *vinput_get_vdevice_by_id(long id)
 	spin_lock(&vinput_lock);
 	list_for_each(curr, &vinput_vdevices) {
 		vinput = list_entry(curr, struct vinput, list);
-		if (vinput->id == id)
+		if (vinput && vinput->id == id)
 			break;
 	}
 	spin_unlock(&vinput_lock);
 
-	if (vinput->id == id)
+	if (vinput && vinput->id == id)
 		return vinput;
 	return ERR_PTR(-ENODEV);
 }
@@ -136,6 +135,8 @@ static const struct file_operations vinput_fops = {
 static void vinput_unregister_vdevice(struct vinput *vinput)
 {
 	input_unregister_device(vinput->input);
+	if (vinput->type->ops->kill)
+		vinput->type->ops->kill(vinput);
 }
 
 static void vinput_destroy_vdevice(struct vinput *vinput)
@@ -214,7 +215,7 @@ static int vinput_register_vdevice(struct vinput *vinput)
 	int err = 0;
 
 	/* register the input device */
-	vinput->input->name = "vinput";
+	vinput->input->name = vinput->type->name;
 	vinput->input->phys = "vinput";
 	vinput->input->dev.parent = &vinput->dev;
 
@@ -253,25 +254,19 @@ static ssize_t export_store(struct class *class, struct class_attribute *attr,
 	}
 
 	vinput->type = device;
-	err = vinput_register_vdevice(vinput);
-	if (err < 0)
-		goto fail_register_vinput;
-
 	err = device_register(&vinput->dev);
 	if (err < 0)
 		goto fail_register;
 
-	err = input_register_device(vinput->input);
+	err = vinput_register_vdevice(vinput);
 	if (err < 0)
-		goto fail_register_input;
+		goto fail_register_vinput;
 
 	return len;
 
-fail_register_input:
+fail_register_vinput:
 	device_unregister(&vinput->dev);
 fail_register:
-	vinput_unregister_vdevice(vinput);
-fail_register_vinput:
 	vinput_destroy_vdevice(vinput);
 fail:
 	return err;
@@ -297,8 +292,8 @@ static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 		goto failed;
 	}
 
-	device_unregister(&vinput->dev);
 	vinput_unregister_vdevice(vinput);
+	device_unregister(&vinput->dev);
 
 	return len;
 failed:
@@ -338,9 +333,14 @@ void vinput_unregister(struct vinput_device *dev)
 	spin_lock(&vinput_lock);
 	list_del(&dev->list);
 	spin_unlock(&vinput_lock);
+
+	/* unregister all devices of thhis type */
 	list_for_each_safe(curr, next, &vinput_vdevices) {
 		struct vinput *vinput = list_entry(curr, struct vinput, list);
-		device_unregister(&vinput->dev);
+		if (vinput && vinput->type == dev) {
+			vinput_unregister_vdevice(vinput);
+			device_unregister(&vinput->dev);
+		}
 	}
 
 	pr_info("vinput: unregistered virtual input device '%s'\n",
