@@ -1,8 +1,9 @@
 KDIR ?= /lib/modules/$(shell uname -r)/build
-obj-m	:= vinput_mod.o vkbd_mod.o vmouse_mod.o
+obj-m	:= vinput_mod.o vkbd_mod.o vts_mt_mod.o vmouse_mod.o
 
 vinput_mod-y := vinput.o
 vkbd_mod-y := vkbd.o
+vts_mt_mod-y := vts_mt.o
 vmouse_mod-y := vmouse.o
 
 all:
