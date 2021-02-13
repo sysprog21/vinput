@@ -97,7 +97,7 @@ static ssize_t vinput_read(struct file *file, char __user *buffer,
 	else if (count + *offset > VINPUT_MAX_LEN)
 		count = len - *offset;
 
-	if (copy_to_user(buffer, buff + *offset, count))
+	if (raw_copy_to_user(buffer, buff + *offset, count))
 		count = -EFAULT;
 
 	*offset += count;
@@ -118,7 +118,7 @@ static ssize_t vinput_write(struct file *file, const char __user *buffer,
 		return -EINVAL;
 	}
 
-	if (copy_from_user(buff, buffer, count))
+	if (raw_copy_from_user(buff, buffer, count))
 		return -EFAULT;
 
 	return vinput->type->ops->send(vinput, buff, count);
@@ -271,6 +271,7 @@ fail_register:
 fail:
 	return err;
 }
+static CLASS_ATTR_WO(export);
 
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 			      const char *buf, size_t len)
@@ -299,17 +300,19 @@ static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 failed:
 	return err;
 }
+static CLASS_ATTR_WO(unexport);
 
-static struct class_attribute vinput_class_attrs[] = {
-	__ATTR(export, 0200, NULL, export_store),
-	__ATTR(unexport, 0200, NULL, unexport_store),
-	__ATTR_NULL,
+static struct attribute *vinput_class_attrs[] = {
+	&class_attr_export.attr,
+	&class_attr_unexport.attr,
+	NULL
 };
+ATTRIBUTE_GROUPS(vinput_class);
 
 static struct class vinput_class = {
 	.name = "vinput",
 	.owner = THIS_MODULE,
-	.class_attrs = vinput_class_attrs,
+	.class_groups = vinput_class_groups,
 };
 
 int vinput_register(struct vinput_device *dev)
