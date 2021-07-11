@@ -1,4 +1,5 @@
-KDIR ?= /lib/modules/$(shell uname -r)/build
+KVERSION ?= $(shell uname -r)
+KDIR ?= /lib/modules/$(KVERSION)/build
 obj-m	:= vinput_mod.o vkbd_mod.o vts_mt_mod.o vmouse_mod.o
 
 vinput_mod-y := vinput.o
