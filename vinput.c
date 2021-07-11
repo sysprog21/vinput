@@ -300,16 +300,21 @@ failed:
 	return err;
 }
 
-static struct class_attribute vinput_class_attrs[] = {
-	__ATTR(export, 0200, NULL, export_store),
-	__ATTR(unexport, 0200, NULL, unexport_store),
-	__ATTR_NULL,
+static CLASS_ATTR_WO(export);
+static CLASS_ATTR_WO(unexport);
+
+static struct attribute *vinput_class_attrs[] = {
+	&class_attr_export.attr,
+	&class_attr_unexport.attr,
+	NULL,
 };
+
+ATTRIBUTE_GROUPS(vinput_class);
 
 static struct class vinput_class = {
 	.name = "vinput",
 	.owner = THIS_MODULE,
-	.class_attrs = vinput_class_attrs,
+	.class_groups = vinput_class_groups,
 };
 
 int vinput_register(struct vinput_device *dev)
