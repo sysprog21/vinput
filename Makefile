@@ -1,8 +1,10 @@
-KVERSION ?= $(shell uname -r)
-KDIR ?= /lib/modules/$(KVERSION)/build
-obj-m	:= vinput.o vkbd.o vts_mt.o vmouse.o
+KDIR ?= /lib/modules/$(shell uname -r)/build
+obj-m	:= vinput.o vkbd.o vts.o vmouse.o
 
-all:
+.PHONY: all
+all: kmod
+
+kmod:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:

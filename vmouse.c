@@ -9,7 +9,7 @@
 
 #include "vinput.h"
 
-#define VINPUT_MTS "vmouse"
+#define VINPUT_MOUSE "vmouse"
 
 static int vinput_vmouse_init(struct vinput *vinput)
 {
@@ -89,7 +89,7 @@ static struct vinput_ops vmouse_ops = {
 };
 
 static struct vinput_device vmouse_dev = {
-	.name = VINPUT_MTS,
+	.name = VINPUT_MOUSE,
 	.ops = &vmouse_ops,
 };
 

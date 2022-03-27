@@ -9,10 +9,10 @@
 
 #include "vinput.h"
 
-#define VINPUT_MTS		"vts_mt"
-#define VTS_MT_CALIB_DONE	0x001f
+#define VINPUT_TS		"vts"
+#define VTS_CALIB_DONE	0x001f
 
-enum vts_mt_init_flags {
+enum vts_init_flags {
 	calib_type,
 	calib_x,
 	calib_y,
@@ -20,7 +20,7 @@ enum vts_mt_init_flags {
 	calib_points,
 };
 
-enum vts_mt_attributes {
+enum vts_attributes {
 	attr_type,
 	attr_max_x,
 	attr_max_y,
@@ -28,7 +28,7 @@ enum vts_mt_attributes {
 	attr_max_points,
 };
 
-static struct device_attribute vts_mt_attrs[];
+static struct device_attribute vts_attrs[];
 
 struct mtslot {
 	int updated;
@@ -38,7 +38,7 @@ struct mtslot {
 	int z;
 };
 
-struct vts_mt_data {
+struct vts_data {
 	int registered;
 	int init_flag;
 
@@ -55,12 +55,12 @@ struct vts_mt_data {
 	struct mtslot *slots;
 };
 
-static void vinput_vts_mt_register_final(struct device *dev)
+static void vinput_vts_register_final(struct device *dev)
 {
 	int i;
 	int err = 0;
 	struct vinput *vinput = dev_to_vinput(dev);
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	input_set_abs_params(vinput->input, ABS_X, 0, drvdata->max_x, 0, 0);
 	input_set_abs_params(vinput->input, ABS_Y, 0, drvdata->max_y, 0, 0);
@@ -85,21 +85,21 @@ static void vinput_vts_mt_register_final(struct device *dev)
 	return;
 }
 
-static void vinput_vts_mt_calib_done(struct device *dev, int flag)
+static void vinput_vts_calib_done(struct device *dev, int flag)
 {
 	struct vinput *vinput = dev_to_vinput(dev);
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	drvdata->init_flag |= (1 << flag);
 
-	if ((drvdata->init_flag & VTS_MT_CALIB_DONE) == VTS_MT_CALIB_DONE)
-		vinput_vts_mt_register_final(dev);
+	if ((drvdata->init_flag & VTS_CALIB_DONE) == VTS_CALIB_DONE)
+		vinput_vts_register_final(dev);
 }
 
 static ssize_t type_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct vinput *vinput = dev_to_vinput(dev);
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	if (!drvdata)
 		return 0;
@@ -112,7 +112,7 @@ static ssize_t type_show(struct device *dev, struct device_attribute *attr, char
 static ssize_t type_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct vinput *vinput = dev_to_vinput(dev);
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	if (!drvdata)
 		return 0;
@@ -127,7 +127,7 @@ static ssize_t type_store(struct device *dev, struct device_attribute *attr, con
 	else
 		return -EPROTONOSUPPORT;
 
-	vinput_vts_mt_calib_done(dev, calib_type);
+	vinput_vts_calib_done(dev, calib_type);
 
 	return size;
 };
@@ -135,27 +135,27 @@ static ssize_t type_store(struct device *dev, struct device_attribute *attr, con
 static ssize_t calib_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct vinput *vinput = dev_to_vinput(dev);
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	if (!drvdata)
 		return 0;
 
-	if (attr == &vts_mt_attrs[attr_max_x]) {
+	if (attr == &vts_attrs[attr_max_x]) {
 		if (drvdata->max_x < 0)
 			return sprintf(buf, "not set\n");
 		else
 			return sprintf(buf, "%d\n", drvdata->max_x);
-	} else if (attr == &vts_mt_attrs[attr_max_y]) {
+	} else if (attr == &vts_attrs[attr_max_y]) {
 		if (drvdata->max_y < 0)
 			return sprintf(buf, "not set\n");
 		else
 			return sprintf(buf, "%d\n", drvdata->max_y);
-	} else if (attr == &vts_mt_attrs[attr_max_z]) {
+	} else if (attr == &vts_attrs[attr_max_z]) {
 		if (drvdata->max_z < 0)
 			return sprintf(buf, "not set\n");
 		else
 			return sprintf(buf, "%d\n", drvdata->max_z);
-	} else if (attr == &vts_mt_attrs[attr_max_points]) {
+	} else if (attr == &vts_attrs[attr_max_points]) {
 		if (drvdata->max_points < 0)
 			return sprintf(buf, "not set\n");
 		else
@@ -170,7 +170,7 @@ static ssize_t calib_store(struct device *dev, struct device_attribute *attr, co
 	int flag;
 	int status;
 	struct vinput *vinput = dev_to_vinput(dev);
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	if (!drvdata)
 		return 0;
@@ -182,28 +182,28 @@ static ssize_t calib_store(struct device *dev, struct device_attribute *attr, co
 	if (status < 0)
 		return status;
 
-	if (attr == &vts_mt_attrs[attr_max_x]) {
+	if (attr == &vts_attrs[attr_max_x]) {
 		drvdata->max_x = val;
 		flag = calib_x;
-	} else if (attr == &vts_mt_attrs[attr_max_y]) {
+	} else if (attr == &vts_attrs[attr_max_y]) {
 		drvdata->max_y = val;
 		flag = calib_y;
-	} else if (attr == &vts_mt_attrs[attr_max_z]) {
+	} else if (attr == &vts_attrs[attr_max_z]) {
 		drvdata->max_z = val;
 		flag = calib_z;
-	} else if (attr == &vts_mt_attrs[attr_max_points]) {
+	} else if (attr == &vts_attrs[attr_max_points]) {
 		drvdata->max_points = val;
 		flag = calib_points;
 	} else {
 		return -EPROTO;
 	}
 
-	vinput_vts_mt_calib_done(dev, flag);
+	vinput_vts_calib_done(dev, flag);
 
 	return size;
 };
 
-static struct device_attribute vts_mt_attrs[] = {
+static struct device_attribute vts_attrs[] = {
 	__ATTR(type, S_IWUSR | S_IRUGO, type_show, type_store),
 	__ATTR(max_x, S_IWUSR | S_IRUGO, calib_show, calib_store),
 	__ATTR(max_y, S_IWUSR | S_IRUGO, calib_show, calib_store),
@@ -212,13 +212,13 @@ static struct device_attribute vts_mt_attrs[] = {
 	__ATTR_NULL,
 };
 
-static int vinput_vts_mt_init(struct vinput *vinput)
+static int vinput_vts_init(struct vinput *vinput)
 {
 	int err = 0;
-	struct vts_mt_data *drvdata;
-	struct device_attribute *attr = vts_mt_attrs;
+	struct vts_data *drvdata;
+	struct device_attribute *attr = vts_attrs;
 
-	drvdata = kmalloc(sizeof(struct vts_mt_data), GFP_KERNEL);
+	drvdata = kmalloc(sizeof(struct vts_data), GFP_KERNEL);
 	vinput->priv_data = drvdata;
 	
 	drvdata->registered = 0;
@@ -242,10 +242,10 @@ static int vinput_vts_mt_init(struct vinput *vinput)
 	return err;
 }
 
-static int vinput_vts_mt_kill(struct vinput *vinput)
+static int vinput_vts_kill(struct vinput *vinput)
 {
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
-	struct device_attribute *attr = vts_mt_attrs;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
+	struct device_attribute *attr = vts_attrs;
 
 	while (attr->attr.name)
 		device_remove_file(&vinput->dev, attr++);
@@ -255,16 +255,16 @@ static int vinput_vts_mt_kill(struct vinput *vinput)
 	return 0;
 }
 
-static int vinput_vts_mt_read(struct vinput *vinput, char *buff, int len)
+static int vinput_vts_read(struct vinput *vinput, char *buff, int len)
 { 
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	if (!drvdata->registered)
 		return -EINVAL;
 	return len;
 }
 
-static int vinput_vts_mt_find_slot(struct vts_mt_data *drvdata, int id)
+static int vinput_vts_find_slot(struct vts_data *drvdata, int id)
 {
 	int i;
 
@@ -285,12 +285,12 @@ static int vinput_vts_mt_find_slot(struct vts_mt_data *drvdata, int id)
 	return (i == drvdata->max_points) ? -1 : i;
 }
 
-static int vinput_vts_mt_parse(struct vinput *vinput, char *buff, int len)
+static int vinput_vts_parse(struct vinput *vinput, char *buff, int len)
 {
 	char *slot;
 	int slot_id;
 	int id, x, y, z, ret;
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	while ((slot = strsep(&buff, ";"))) {
 		ret = sscanf(slot, "%d,%d,%d,%d", &id, &x, &y, &z);
@@ -299,7 +299,7 @@ static int vinput_vts_mt_parse(struct vinput *vinput, char *buff, int len)
 			len = -EINVAL;
 			break;
 		}
-		slot_id = vinput_vts_mt_find_slot(drvdata, id);
+		slot_id = vinput_vts_find_slot(drvdata, id);
 		pr_info("slot=%d\n", slot_id);
 
 		if (slot_id < 0) {
@@ -322,17 +322,17 @@ static int vinput_vts_mt_parse(struct vinput *vinput, char *buff, int len)
 	return len;
 }
 
-static int vinput_vts_mt_send(struct vinput *vinput, char *buff, int len)
+static int vinput_vts_send(struct vinput *vinput, char *buff, int len)
 {
 	int i;
 	int ret;
-	struct vts_mt_data *drvdata = (struct vts_mt_data *)vinput->priv_data;
+	struct vts_data *drvdata = (struct vts_data *)vinput->priv_data;
 
 	if (!drvdata->registered)
 		return -EINVAL;
 
 	/* parse slots */
-	ret = vinput_vts_mt_parse(vinput, buff, len);
+	ret = vinput_vts_parse(vinput, buff, len);
 	if (ret < 0)
 		return ret;
 
@@ -365,30 +365,30 @@ static int vinput_vts_mt_send(struct vinput *vinput, char *buff, int len)
 	return len;
 }
 
-static struct vinput_ops vts_mt_ops = {
-	.init = vinput_vts_mt_init,
-	.kill = vinput_vts_mt_kill,
-	.send = vinput_vts_mt_send,
-	.read = vinput_vts_mt_read,
+static struct vinput_ops vts_ops = {
+	.init = vinput_vts_init,
+	.kill = vinput_vts_kill,
+	.send = vinput_vts_send,
+	.read = vinput_vts_read,
 };
 
-static struct vinput_device vts_mt_dev = {
-	.name = VINPUT_MTS,
-	.ops = &vts_mt_ops,
+static struct vinput_device vts_dev = {
+	.name = VINPUT_TS,
+	.ops = &vts_ops,
 };
 
-static int __init vts_mt_init(void)
+static int __init vts_init(void)
 {
-	return vinput_register(&vts_mt_dev);
+	return vinput_register(&vts_dev);
 }
 
-static void __exit vts_mt_end(void)
+static void __exit vts_end(void)
 {
-	vinput_unregister(&vts_mt_dev);
+	vinput_unregister(&vts_dev);
 }
 
-module_init(vts_mt_init);
-module_exit(vts_mt_end);
+module_init(vts_init);
+module_exit(vts_end);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jean-Baptiste Theou <jbtheou@gmail.com>");
