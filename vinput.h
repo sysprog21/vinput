@@ -1,10 +1,8 @@
-#include <asm/uaccess.h>
+#ifndef VINPUT_H
+#define VINPUT_H
+
 #include <linux/cdev.h>
-#include <linux/init.h>
 #include <linux/input.h>
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/slab.h>
 #include <linux/spinlock.h>
 
 #define VINPUT_MAX_LEN 128
@@ -44,3 +42,5 @@ struct vinput_device {
 
 int vinput_register(struct vinput_device *dev);
 void vinput_unregister(struct vinput_device *dev);
+
+#endif

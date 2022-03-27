@@ -1,12 +1,11 @@
-#include <asm/uaccess.h>
 #include <linux/cdev.h>
 #include <linux/init.h>
 #include <linux/input.h>
-#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <linux/types.h>
+
+#include <asm/uaccess.h>
 
 #include "vinput.h"
 
