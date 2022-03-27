@@ -95,4 +95,4 @@ module_exit(vkbd_end);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tristan Lelong <tristan.lelong@blunderer.org>");
-MODULE_DESCRIPTION("emulate input events thru /dev/vkbd");
+MODULE_DESCRIPTION("Emulate keyboard input events through /dev/vinput");

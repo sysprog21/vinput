@@ -396,4 +396,4 @@ module_exit(vinput_end);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tristan Lelong <tristan.lelong@blunderer.org>");
-MODULE_DESCRIPTION("emulate input events thru /dev/[vkbd | vts | vmouse]");
+MODULE_DESCRIPTION("Emulate input events");

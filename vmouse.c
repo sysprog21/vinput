@@ -57,29 +57,28 @@ static int vinput_vmouse_send(struct vinput *vinput, char *buff, int len)
     ret = sscanf(buff, "%d,%d,%d,%d", &x, &y, &wheel, &buttons);
     if (ret != 4) {
         dev_warn(&vinput->dev, "Invalid input format: x,y,wheel,buttons\n");
-        len = -EINVAL;
-    } else {
-        if (x)
-            input_report_rel(vinput->input, REL_X, x);
-        if (y)
-            input_report_rel(vinput->input, REL_Y, y);
-        if (wheel)
-            input_report_rel(vinput->input, REL_WHEEL, wheel);
-
-        if ((*state | buttons) & (0x1 << VBUTTON_LEFT))
-            input_report_key(vinput->input, BTN_LEFT,
-                             1 & (buttons >> VBUTTON_LEFT));
-        else if ((*state | buttons) & (0x1 << VBUTTON_RIGHT))
-            input_report_key(vinput->input, BTN_RIGHT,
-                             1 & (buttons >> VBUTTON_RIGHT));
-        else if ((*state | buttons) & (0x1 << VBUTTON_MIDDLE))
-            input_report_key(vinput->input, BTN_MIDDLE,
-                             1 & (buttons >> VBUTTON_MIDDLE));
-
-        *state = buttons;
-
-        input_sync(vinput->input);
+        return -EINVAL;
     }
+    if (x)
+        input_report_rel(vinput->input, REL_X, x);
+    if (y)
+        input_report_rel(vinput->input, REL_Y, y);
+    if (wheel)
+        input_report_rel(vinput->input, REL_WHEEL, wheel);
+
+    if ((*state | buttons) & (0x1 << VBUTTON_LEFT))
+        input_report_key(vinput->input, BTN_LEFT,
+                         1 & (buttons >> VBUTTON_LEFT));
+    else if ((*state | buttons) & (0x1 << VBUTTON_RIGHT))
+        input_report_key(vinput->input, BTN_RIGHT,
+                         1 & (buttons >> VBUTTON_RIGHT));
+    else if ((*state | buttons) & (0x1 << VBUTTON_MIDDLE))
+        input_report_key(vinput->input, BTN_MIDDLE,
+                         1 & (buttons >> VBUTTON_MIDDLE));
+
+    *state = buttons;
+
+    input_sync(vinput->input);
 
     return len;
 }
@@ -111,4 +110,4 @@ module_exit(vmouse_end);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tristan Lelong <tristan.lelong@blunderer.org>");
-MODULE_DESCRIPTION("emulate mouse input events thru /dev/vinput");
+MODULE_DESCRIPTION("Emulate mouse input events through /dev/vinput");

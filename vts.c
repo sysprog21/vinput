@@ -409,4 +409,4 @@ module_exit(vts_end);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jean-Baptiste Theou <jbtheou@gmail.com>");
-MODULE_DESCRIPTION("emulate multitouch screen input events thru /dev/vinput");
+MODULE_DESCRIPTION("Emulate multitouch input events through /dev/vinput");
