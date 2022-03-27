@@ -1,7 +1,6 @@
 #ifndef VINPUT_H
 #define VINPUT_H
 
-#include <linux/cdev.h>
 #include <linux/input.h>
 #include <linux/spinlock.h>
 
