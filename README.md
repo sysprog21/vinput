@@ -2,7 +2,7 @@
 
 ## Prerequisite
 
-The following packages must be installed before building `vinput`.
+The following package must be installed before building `vinput`.
 
 In order to compile the kernel driver successfully, package versions
 of currently used kernel, kernel-devel and kernel-headers need to be matched.
@@ -16,7 +16,7 @@ After running `make`, you should be able to generate the following files:
 * `vinput.ko` - virtual input device layer
 * `vkbd.ko` - virtual keyboard
 * `vmouse.ko` - virtual mouse
-* `vts.ko` - virtual touchscreen
+* `vts.ko` - virtual multitouch screen inputs
 
 The module can be loaded to Linux kernel by runnning the command:
 ```shell
@@ -29,9 +29,9 @@ $ sudo insmod vkbd.ko
 `vinput` is a API to allow easy development of virtual input drivers.
 
 The drivers needs to export a `vinput_devince` function that contains the virtual device name and `vinput_ops` structure that describes:
-- the init function: init
-- the input event injection function: send
-- the readback function: read
+- the init function: `init`
+- the input event injection function: `send`
+- the readback function: `read`
 
 Then using `vinput_register_device` and `vinput_unregister_device` will add a new device to the list of support virtual input devices.
 
@@ -58,11 +58,11 @@ The buffer will then be copied to user.
 
 ## Userland API
 `vinput` devices are created and destroyed using sysfs.
-event injection is done thru a /dev node.
+event injection is done through a `/dev` node.
 
 The device name will be used by the userland to export a new virtual input device.
 
-To create a vinputX sysfs entry and /dev node.
+To create a `vinputX` sysfs entry and `/dev` node.
 ```shell
 $ echo "vkbd" | sudo tee /sys/class/vinput/export
 ```
