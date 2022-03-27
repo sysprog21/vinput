@@ -52,7 +52,6 @@ struct vts_data {
 static void vinput_vts_register_final(struct device *dev)
 {
     int i;
-    int err = 0;
     struct vinput *vinput = dev_to_vinput(dev);
     struct vts_data *drvdata = (struct vts_data *) vinput->priv_data;
 
@@ -75,10 +74,8 @@ static void vinput_vts_register_final(struct device *dev)
     if (drvdata->type == TYPE_B)
         input_mt_init_slots(vinput->input, drvdata->max_points, 0);
 
-    if (input_register_device(vinput->input)) {
+    if (input_register_device(vinput->input))
         dev_err(&vinput->dev, "cannot register vinput input device\n");
-        err = -ENODEV;
-    }
     drvdata->registered = 1;
 
     return;
@@ -298,11 +295,11 @@ static int vinput_vts_parse(struct vinput *vinput, char *buff, int len)
 {
     char *slot;
     int slot_id;
-    int id, x, y, z, ret;
+    int id, x, y, z;
     struct vts_data *drvdata = (struct vts_data *) vinput->priv_data;
 
     while ((slot = strsep(&buff, ";"))) {
-        ret = sscanf(slot, "%d,%d,%d,%d", &id, &x, &y, &z);
+        int ret = sscanf(slot, "%d,%d,%d,%d", &id, &x, &y, &z);
         if (ret != 4) {
             dev_warn(&vinput->dev, "Invalid input format\n");
             len = -EINVAL;
