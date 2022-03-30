@@ -92,3 +92,8 @@ $ echo "-34" | sudo tee /dev/vinput0
 
 `vinput` is released under the GNU General Public License. Use of this source code is governed by
 the GPL License version 2 that can be found in the LICENSE file.
+
+## Related Projects
+* [virtual_touchscreen](https://github.com/vi/virtual_touchscreen): A simple evdev linux device driver and GUI program to simulate multitouch touchscreen.
+* [mqtt2js](https://github.com/cepr/mqtt2js): Linux virtual joystick controlled by MQTT
+* [VirtualMouse](https://github.com/kingpulse/VirtualMouse): Virtual mouse drivers for linux.
