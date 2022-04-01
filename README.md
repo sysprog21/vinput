@@ -28,7 +28,7 @@ $ sudo insmod vkbd.ko
 
 `vinput` is a API to allow easy development of virtual input drivers.
 
-The drivers needs to export a `vinput_devince` function that contains the virtual device name and `vinput_ops` structure that describes:
+The drivers needs to export a `vinput_device` function that contains the virtual device name and `vinput_ops` structure that describes:
 - the init function: `init`
 - the input event injection function: `send`
 - the readback function: `read`
