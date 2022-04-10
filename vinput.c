@@ -17,7 +17,7 @@ static DECLARE_BITMAP(vinput_ids, VINPUT_MINORS);
 static LIST_HEAD(vinput_devices);
 static LIST_HEAD(vinput_vdevices);
 
-static dev_t vinput_dev;
+static int vinput_dev;
 static struct spinlock vinput_lock;
 static struct class vinput_class;
 
@@ -342,7 +342,7 @@ void vinput_unregister(struct vinput_device *dev)
     list_del(&dev->list);
     spin_unlock(&vinput_lock);
 
-    /* unregister all devices of thhis type */
+    /* unregister all devices of this type */
     list_for_each_safe (curr, next, &vinput_vdevices) {
         struct vinput *vinput = list_entry(curr, struct vinput, list);
         if (vinput && vinput->type == dev) {
